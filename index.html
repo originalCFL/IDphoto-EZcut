@@ -1,10 +1,994 @@
-<!doctype html><!-- SPDX-License-Identifier: AGPL-3.0-or-later --><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>證件照排版與輸出</title><script src="https://cdn.tailwindcss.com"></script><!-- Uses @imgly/background-removal, licensed AGPL-3.0-or-later. Source and notices: README.md / NOTICE.md. --><script type="module">import{removeBackground}from'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm';window.removeBackground=removeBackground</script><style>input[type=range]{accent-color:#2563eb}#box{touch-action:none}#crop{pointer-events:none;user-select:none;-webkit-user-drag:none}.dots{background-image:radial-gradient(#cbd5e1 1px,transparent 1px);background-size:12px 12px}@media print{body>*:not(#print){display:none!important}#print{display:block!important}}</style></head>
-<body class="min-h-screen bg-slate-100 text-slate-800"><main class="mx-auto max-w-6xl p-4 py-8 sm:p-8"><header class="mb-7 text-center"><div class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-blue-600 text-2xl text-white">▣</div><h1 class="text-3xl font-bold text-slate-900">證件照排版與輸出</h1><p class="mt-2 text-sm text-slate-500">上傳、裁切、去背與高解析下載。</p></header><div class="grid gap-6 lg:grid-cols-[390px_1fr]"><section class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><h2 class="font-bold">設定照片</h2><label class="mt-4 flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-blue-600 hover:bg-blue-50">＋ 上傳人物照片 <span class="mt-1 text-xs text-slate-400">JPG、PNG、WEBP</span><input id="file" type="file" accept="image/*" class="hidden"></label><div class="mt-6 space-y-5"><fieldset><legend class="text-sm font-semibold">證件照尺寸</legend><div id="sizeChoices" class="mt-2 grid grid-cols-3 gap-2"><label class="cursor-pointer rounded-xl border-2 border-blue-500 bg-blue-50 p-2 text-center"><input class="sr-only" type="radio" name="size" value="two" checked><b class="block text-sm">2 吋</b><small>3.5 × 4.5 cm</small></label><label class="cursor-pointer rounded-xl border-2 border-slate-200 p-2 text-center"><input class="sr-only" type="radio" name="size" value="one"><b class="block text-sm">1 吋</b><small>2.8 × 3.5 cm</small></label><label class="cursor-pointer rounded-xl border-2 border-slate-200 p-2 text-center"><input class="sr-only" type="radio" name="size" value="mixed"><b class="block text-sm">混合</b><small>各 4 張</small></label></div></fieldset><fieldset><legend class="text-sm font-semibold">背景處理</legend><label id="removeCard" class="mt-2 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 p-3 text-sm font-semibold transition"><input id="remove" type="checkbox" class="h-4 w-4">去背後更換背景 <span id="wait" class="ml-auto hidden text-xs text-blue-600">去背中…</span></label><div id="bgChoices" class="mt-2 grid grid-cols-2 gap-2 opacity-40"><label class="cursor-pointer rounded-xl border-2 border-blue-500 bg-blue-50 p-2 text-center"><input class="sr-only" type="radio" name="bg" value="white" checked disabled><b class="text-sm">白色背景</b></label><label class="cursor-pointer rounded-xl border-2 border-slate-200 p-2 text-center"><input class="sr-only" type="radio" name="bg" value="blue" disabled><b class="text-sm">漸層藍背景</b></label></div><p class="mt-2 text-xs text-slate-400">未選去背時保留原圖背景；去背在瀏覽器內進行。</p></fieldset><fieldset><legend class="text-sm font-semibold">輸出紙張</legend><div id="paperChoices" class="mt-2 grid grid-cols-2 gap-2"><label class="cursor-pointer rounded-xl border-2 border-blue-500 bg-blue-50 p-3 text-center"><input class="sr-only" type="radio" name="paper" value="4x6" checked><b>4 × 6 吋</b></label><label class="cursor-pointer rounded-xl border-2 border-slate-200 p-3 text-center"><input class="sr-only" type="radio" name="paper" value="a4"><b>A4</b></label></div></fieldset><div class="flex justify-between text-sm font-semibold"><label>縮放照片</label><span id="zv" class="font-normal text-slate-400">100%</span></div><input id="zoom" type="range" min="100" max="250" value="100" class="w-full"></div><div class="mt-6"><button id="save" disabled class="w-full rounded-xl bg-blue-600 p-3 text-sm font-bold text-white disabled:bg-slate-300">下載 PNG</button></div></section><section class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"><div class="flex justify-between"><div><h2 class="font-bold">裁切與排版預覽</h2><p class="text-xs text-slate-500">拖曳圖片調整頭像位置。</p></div><span id="count" class="hidden rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700"></span></div><div class="mt-5 grid gap-6 md:grid-cols-[280px_1fr]"><div><div id="box" class="dots relative mx-auto flex w-full max-w-[280px] cursor-move items-center justify-center overflow-hidden rounded-xl bg-slate-100" style="aspect-ratio:3.5/4.5"><img id="crop" class="absolute max-w-none"><span id="empty" class="z-10 px-6 text-center text-sm text-slate-400">請上傳照片</span><i class="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-inset ring-blue-500"></i></div><p class="mt-3 text-center text-xs text-slate-400">拖曳移動，滑桿縮放</p></div><div class="dots rounded-xl border p-3"><canvas id="preview" class="block w-full bg-white shadow"></canvas></div></div></section></div></main>
-<script>
-const D=300,C=D/2.54,S={two:{w:3.5*C,h:4.5*C,n:'2吋'},one:{w:2.8*C,h:3.5*C,n:'1吋'}},P={'4x6':{w:1800,h:1200},a4:{w:2480,h:3508}},q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)];let orig,originalFile,img,cut,scale=1,pos={x:0,y:0},drag,start;const get=n=>q(`input[name=${n}]:checked`).value,sz=()=>S[get('size')==='one'?'one':'two'];
-function styles(id){qa('#'+id+'Choices label').forEach(x=>{let on=x.querySelector('input').checked;x.classList.toggle('border-blue-500',on);x.classList.toggle('bg-blue-50',on);x.classList.toggle('border-slate-200',!on)})}function apply(){if(!img)return;let b=q('#box').getBoundingClientRect(),k=scale*q('#zoom').value/100,w=img.naturalWidth*k,h=img.naturalHeight*k;q('#crop').style.cssText=`width:${w}px;height:${h}px;left:calc(50% + ${pos.x}px - ${w/2}px);top:calc(50% + ${pos.y}px - ${h/2}px)`;q('#zv').textContent=q('#zoom').value+'%';render()}function fit(){if(!img)return;let b=q('#box').getBoundingClientRect();scale=Math.max(b.width/img.naturalWidth,b.height/img.naturalHeight);pos={x:0,y:0};apply()}
-function layout(){let p=P[get('paper')],m=42,g=16,t=get('size');if(t!=='mixed'){let s=S[t],co=Math.floor((p.w-2*m+g)/(s.w+g)),ro=Math.floor((p.h-2*m+g)/(s.h+g)),uw=co*s.w+(co-1)*g,uh=ro*s.h+(ro-1)*g;return{p,a:Array.from({length:co*ro},(_,i)=>({s,x:(p.w-uw)/2+i%co*(s.w+g),y:(p.h-uh)/2+Math.floor(i/co)*(s.h+g)})),txt:`${co*ro} 張 ${s.n}`}}let a=[],x;if(get('paper')==='4x6'){x=(p.w-(4*S.two.w+3*g))/2;for(let i=0;i<4;i++)a.push({s:S.two,x:x+i*(S.two.w+g),y:m});x=(p.w-(4*S.one.w+3*g))/2;for(let i=0;i<4;i++)a.push({s:S.one,x:x+i*(S.one.w+g),y:m+S.two.h+g})}else{x=(p.w-(2*S.two.w+g))/2;for(let i=0;i<4;i++)a.push({s:S.two,x:x+i%2*(S.two.w+g),y:m+Math.floor(i/2)*(S.two.h+g)});x=(p.w-(4*S.one.w+3*g))/2;for(let i=0;i<4;i++)a.push({s:S.one,x:x+i*(S.one.w+g),y:m+2*S.two.h+2*g})}return{p,a,txt:'4 張 2吋 + 4 張 1吋'}}
-function blueGradient(c,x,y,w,h){let g=c.createLinearGradient(x,y,x,y+h);g.addColorStop(0,'#3A9DF8');g.addColorStop(.4,'#62B4FC');g.addColorStop(.7,'#8ECEFF');g.addColorStop(1,'#C2E5FF');c.fillStyle=g;c.fillRect(x,y,w,h)}function draw(c,x,y,s){let b=q('#box').getBoundingClientRect(),k=scale*q('#zoom').value/100,r=s.w/s.h,ch=b.width/k/r,cw=ch*r,sx=img.naturalWidth/2-cw/2-pos.x/k,sy=img.naturalHeight/2-ch/2-pos.y/k;if(q('#remove').checked){if(get('bg')==='white'){c.fillStyle='#fff';c.fillRect(x,y,s.w,s.h)}else blueGradient(c,x,y,s.w,s.h)}c.drawImage(img,sx,sy,cw,ch,x,y,s.w,s.h)}function render(){let l=layout(),r=Math.min(700/l.p.w,430/l.p.h),c=q('#preview');c.width=l.p.w*r;c.height=l.p.h*r;let x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);if(img)l.a.forEach(i=>{x.save();x.scale(r,r);draw(x,i.x,i.y,i.s);x.restore()});q('#count').textContent=l.txt;q('#count').classList.toggle('hidden',!img)}function out(){let l=layout(),c=document.createElement('canvas');c.width=l.p.w;c.height=l.p.h;let x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);l.a.forEach(i=>draw(x,i.x,i.y,i.s));return c}
-function use(i){img=i;q('#crop').src=i.src;q('#empty').classList.add('hidden');requestAnimationFrame(fit);q('#save').disabled=false}function reflow(){if(!img)return;let b=q('#box').getBoundingClientRect(),minimum=Math.max(b.width/img.naturalWidth,b.height/img.naturalHeight);scale=Math.max(scale,minimum);apply()}q('#file').onchange=e=>{let f=e.target.files[0];if(!f)return;originalFile=f;orig=new Image;orig.onload=()=>{cut=null;q('#zoom').value=100;use(orig)};orig.src=URL.createObjectURL(f)};q('#remove').onchange=async e=>{let selected=e.target.checked;q('#removeCard').classList.toggle('border-blue-500',selected);q('#removeCard').classList.toggle('bg-blue-50',selected);q('#removeCard').classList.toggle('border-slate-200',!selected);q('#bgChoices').classList.toggle('opacity-40',!selected);qa('#bgChoices input').forEach(x=>x.disabled=!selected);if(!selected){if(orig)use(orig);return}if(cut){use(cut);return}if(!originalFile||!window.removeBackground){alert('去背模組載入中，請稍候重試。');e.target.checked=false;q('#removeCard').classList.remove('border-blue-500','bg-blue-50');q('#removeCard').classList.add('border-slate-200');return}try{q('#wait').classList.remove('hidden');let u=URL.createObjectURL(await window.removeBackground(originalFile));cut=new Image;cut.onload=()=>{use(cut);URL.revokeObjectURL(u)};cut.onerror=()=>{URL.revokeObjectURL(u);throw new Error('去背結果無法載入')};cut.src=u}catch(e){console.error(e);alert('去背失敗，請確認網路連線後再試。');e.target.checked=false;q('#removeCard').classList.remove('border-blue-500','bg-blue-50');q('#removeCard').classList.add('border-slate-200');q('#bgChoices').classList.add('opacity-40');qa('#bgChoices input').forEach(x=>x.disabled=true)}finally{q('#wait').classList.add('hidden')}};
-qa('input[name=size]').forEach(e=>e.onchange=()=>{styles('size');let s=sz();q('#box').style.aspectRatio=s.w+'/'+s.h;requestAnimationFrame(fit)});qa('input[name=paper]').forEach(e=>e.onchange=()=>{styles('paper');render()});qa('input[name=bg]').forEach(e=>e.onchange=()=>{styles('bg');render()});q('#zoom').oninput=apply;q('#box').onpointerdown=e=>{if(!img)return;e.preventDefault();drag=true;start={x:e.clientX,y:e.clientY,px:pos.x,py:pos.y};q('#box').setPointerCapture(e.pointerId)};q('#box').onpointermove=e=>{if(drag){e.preventDefault();pos={x:start.px+e.clientX-start.x,y:start.py+e.clientY-start.y};apply()}};q('#box').onpointerup=()=>drag=false;q('#box').onpointercancel=()=>drag=false;q('#save').onclick=()=>{let canvas=out();canvas.toBlob(blob=>{if(!blob){alert('無法產生 PNG，請再試一次。');return}let a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download='證件照.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)},'image/png')};addEventListener('resize',reflow);render();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>證件照排版工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1c2530;
+    --ink-soft: rgba(28,37,48,0.55);
+    --ink-faint: rgba(28,37,48,0.35);
+    --ink-hair: rgba(28,37,48,0.10);
+    --page-bg: #eef2f7;
+    --accent: #2f6fed;
+    --accent-dark: #2557c7;
+    --accent-wash: rgba(47,111,237,0.07);
+    --red: #e0554f;
+    --white: #ffffff;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --blue-gradient: linear-gradient(to bottom, #3A9DF8 0%, #62B4FC 40%, #8ECEFF 70%, #C2E5FF 100%);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--page-bg);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  @media (max-width: 480px) {
+    .panel { padding: 16px; }
+  }
+  img { max-width: none; }
+  button { font-family: inherit; }
+
+  /* Centered hero header */
+  .hero {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 36px 20px 24px;
+    text-align: center;
+  }
+  .hero-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    box-shadow: 0 8px 20px rgba(47,111,237,0.35);
+  }
+  .hero-icon span {
+    width: 16px; height: 16px;
+    border: 2.5px solid #fff;
+    border-radius: 4px;
+  }
+  .hero h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .hero p {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 8px 0 0;
+  }
+
+  /* Main two-panel layout */
+  .app-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .app-main { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--white);
+    border: 1px solid var(--ink-hair);
+    border-radius: var(--radius);
+    padding: 22px;
+    min-width: 0;
+  }
+  .panel-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .panel-hint {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin: 4px 0 0;
+    line-height: 1.5;
+  }
+
+  .field { margin-top: 22px; }
+  .field:first-of-type { margin-top: 16px; }
+  .field-label {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 10px;
+  }
+
+  /* Dropzone */
+  .dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: var(--accent-wash);
+    border-radius: var(--radius-sm);
+    padding: 26px 14px;
+    cursor: pointer;
+    transition: background-color .15s;
+    text-align: center;
+  }
+  .dropzone:hover { background: rgba(47,111,237,0.12); }
+  .dropzone .main-text { font-size: 14px; color: var(--accent); font-weight: 500; }
+  .dropzone .sub-text { font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; }
+  .file-name {
+    margin-top: 8px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    word-break: break-all;
+  }
+
+  /* Option grid / buttons */
+  .option-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .option-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 420px) {
+    .option-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+  }
+  .option-btn {
+    text-align: center;
+    border: 2px solid var(--ink-hair);
+    border-radius: 10px;
+    padding: 10px 10px;
+    background: var(--white);
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .option-btn.row { flex-direction: row; align-items: center; justify-content: center; gap: 8px; text-align: left; }
+  .option-btn:hover { border-color: rgba(47,111,237,0.35); }
+  .option-btn.selected { border-color: var(--accent); background: var(--accent-wash); color: var(--accent); }
+  .option-btn .label { font-size: 13.5px; font-weight: 600; }
+  .option-btn .meta { font-size: 11px; color: var(--ink-faint); }
+  .option-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .option-btn:disabled:hover { border-color: var(--ink-hair); background: var(--white); }
+
+  .swatch {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.12);
+    flex-shrink: 0;
+  }
+  .swatch.blue-swatch { background: var(--blue-gradient); }
+
+  /* Checkbox row */
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid var(--ink-hair);
+    border-radius: 10px;
+    padding: 11px 14px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .checkbox-row.checked { border-color: var(--accent); background: var(--accent-wash); }
+
+  .bg-color-row { margin-top: 10px; }
+
+  /* Status / error lines */
+  .status-line, .error-line {
+    margin-top: 10px;
+    font-size: 11.5px;
+    display: none;
+    align-items: center;
+    gap: 7px;
+    line-height: 1.4;
+  }
+  .status-line.active { display: flex; color: var(--accent); }
+  .error-line.active { display: flex; color: var(--red); }
+  .spinner {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    border: 2px solid rgba(47,111,237,0.25);
+    border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+    flex-shrink: 0;
+  }
+  .spinner.large {
+    width: 28px; height: 28px;
+    border-width: 3px;
+    border-color: rgba(255,255,255,0.35);
+    border-top-color: #fff;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Zoom row */
+  .zoom-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .zoom-value { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: #d7dce2;
+  }
+  input[type="range"]:disabled { opacity: .5; }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 17px; height: 17px;
+    border-radius: 999px;
+    background: var(--accent);
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 17px; height: 17px;
+    border-radius: 999px;
+    background: var(--accent);
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 14px;
+    border: none;
+    cursor: pointer;
+    transition: background-color .15s;
+  }
+  .btn:disabled { cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+  .btn-primary:disabled { background: #c7cfdb; color: #fff; }
+
+  /* Right panel: crop + preview side by side */
+  .preview-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: 16px;
+  }
+  @media (max-width: 640px) {
+    .preview-row { flex-direction: column; align-items: stretch; }
+  }
+  .box {
+    flex: 1 1 0;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    background-color: #f7f9fc;
+    background-image: radial-gradient(circle, #c9d3e0 1px, transparent 1.6px);
+    background-size: 14px 14px;
+    min-width: 0;
+  }
+  @media (max-width: 640px) {
+    /* flex: 1 1 0 assumes a *row* layout — flex-basis:0 there only
+       zeroes the horizontal hypothetical size (by design, so the two
+       boxes split width evenly). Once .preview-row switches to
+       flex-direction:column at this breakpoint, the main axis becomes
+       vertical, and that same flex-basis:0 wrongly zeroes out
+       *height* instead, collapsing both boxes to almost nothing.
+       Reset to natural sizing and use width:100% for the stacking. */
+    .box { flex: none; width: 100%; }
+  }
+  .crop-box {
+    border: 2px solid var(--accent);
+    user-select: none;
+  }
+  .output-box {
+    border: 1.5px dashed #c3ccd9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+  }
+  .crop-image {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: top left;
+    cursor: grab;
+    touch-action: none;
+    display: none;
+  }
+  .crop-image:active { cursor: grabbing; }
+  .box-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--ink-faint);
+    padding: 0 16px;
+    text-align: center;
+  }
+  .box-spinner-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(28,37,48,0.55);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .box-spinner-overlay.active { display: flex; }
+  .box-spinner-overlay .label { color: #fff; font-size: 11.5px; }
+  #outputCanvas {
+    display: none;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .layout-info {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="hero-icon"><span></span></div>
+    <h1>證件照排版工具</h1>
+    <p>上傳、裁切、去背與高解析下載。</p>
+  </div>
+
+  <main class="app-main">
+
+    <!-- LEFT: everything about the photo, top to bottom -->
+    <section class="panel">
+      <h2 class="panel-title">設定照片</h2>
+
+      <div class="field" style="margin-top:16px;">
+        <label for="fileInput" class="dropzone">
+          <span class="main-text">＋ 上傳人物照片</span>
+          <span class="sub-text">JPG、PNG、WEBP</span>
+        </label>
+        <input id="fileInput" type="file" accept="image/*" style="display:none;">
+        <p id="fileName" class="file-name" style="display:none;"></p>
+      </div>
+
+      <div class="field">
+        <p class="field-label">證件照尺寸</p>
+        <div class="option-grid cols-3" id="sizeGroup">
+          <button type="button" data-mode="2inch" class="option-btn selected">
+            <span class="label">2 吋</span>
+            <span class="meta">3.5×4.5 cm</span>
+          </button>
+          <button type="button" data-mode="1inch" class="option-btn">
+            <span class="label">1 吋</span>
+            <span class="meta">2.8×3.5 cm</span>
+          </button>
+          <button type="button" data-mode="mixed" class="option-btn">
+            <span class="label">混合</span>
+            <span class="meta">各 4 張</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <p class="field-label">背景處理</p>
+        <label id="bgToggleRow" class="checkbox-row">
+          <input type="checkbox" id="bgToggle" disabled>
+          去背後更換背景
+        </label>
+
+        <div class="bg-color-row option-grid" id="bgColorGroup">
+          <button type="button" data-color="white" class="option-btn row selected" disabled>
+            <span class="swatch" style="background-color:#ffffff;"></span>
+            <span class="label">白色背景</span>
+          </button>
+          <button type="button" data-color="blue" class="option-btn row" disabled>
+            <span class="swatch blue-swatch"></span>
+            <span class="label">漸層藍背景</span>
+          </button>
+        </div>
+
+        <p class="panel-hint">未選去背時保留原圖背景；去背在瀏覽器內進行。</p>
+        <p id="bgStatus" class="status-line">
+          <span class="spinner"></span>
+          <span id="bgStatusText">AI 去背處理中，第一次使用需下載模型，請稍候…</span>
+        </p>
+        <p id="bgError" class="error-line">去背處理失敗，請確認網路連線後再試一次。</p>
+      </div>
+
+      <div class="field">
+        <p class="field-label">輸出紙張</p>
+        <div class="option-grid" id="layoutGroup">
+          <button type="button" data-layout="4x6" class="option-btn selected">
+            <span class="label">4 × 6 吋</span>
+          </button>
+          <button type="button" data-layout="a4" class="option-btn">
+            <span class="label">A4</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="zoom-label-row">
+          <p class="field-label" style="margin:0;">縮放照片</p>
+          <span class="zoom-value" id="zoomValue">100%</span>
+        </div>
+        <input id="zoomSlider" type="range" min="100" max="400" value="100" disabled>
+      </div>
+
+      <div class="field">
+        <button id="downloadBtn" class="btn btn-primary" disabled>下載 PNG</button>
+      </div>
+    </section>
+
+    <!-- RIGHT: crop editor + live layout preview, side by side -->
+    <section class="panel">
+      <h2 class="panel-title">裁切與排版預覽</h2>
+      <p class="panel-hint">拖曳圖片調整頭像位置，滑桿縮放；選好紙張後排版預覽會自動更新。</p>
+
+      <div class="preview-row">
+        <div id="cropContainer" class="box crop-box">
+          <img id="cropImage" class="crop-image" draggable="false">
+          <div id="cropPlaceholder" class="box-placeholder">請上傳照片</div>
+          <div id="cropSpinner" class="box-spinner-overlay">
+            <span class="spinner large"></span>
+            <span class="label">去背處理中…</span>
+          </div>
+        </div>
+
+        <div id="outputBox" class="box output-box">
+          <p id="outputPlaceholder" class="box-placeholder" style="position:static;">排版預覽</p>
+          <canvas id="outputCanvas"></canvas>
+        </div>
+      </div>
+
+      <p id="layoutInfo" class="layout-info"></p>
+    </section>
+
+  </main>
+
+<script type="module">
+  import { removeBackground as imglyRemoveBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm";
+
+  const DPI = 300;
+  const cmToPx = (cm) => Math.round((cm / 2.54) * DPI);
+
+  const SIZES = {
+    '2inch': { w: 3.5, h: 4.5 },
+    '1inch': { w: 2.8, h: 3.5 },
+  };
+
+  const BLUE_GRADIENT_STOPS = [
+    [0.0, '#3A9DF8'],
+    [0.4, '#62B4FC'],
+    [0.7, '#8ECEFF'],
+    [1.0, '#C2E5FF'],
+  ];
+
+  function paintBlueGradient(ctx, outW, outH) {
+    const grad = ctx.createLinearGradient(0, 0, 0, outH);
+    for (const [stop, color] of BLUE_GRADIENT_STOPS) {
+      grad.addColorStop(stop, color);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, outW, outH);
+  }
+
+  const BLUE_GRADIENT_CSS = 'linear-gradient(to bottom, #3A9DF8 0%, #62B4FC 40%, #8ECEFF 70%, #C2E5FF 100%)';
+
+  let originalFile = null;
+  let originalImg = null;
+  let cutoutImg = null;
+  let img = null;
+  let naturalW = 0, naturalH = 0;
+  let scale = 1, baseScale = 1;
+  let translateX = 0, translateY = 0;
+  let sizeMode = '2inch';
+  let layoutType = '4x6';
+  let bgMode = 'original';
+  let bgType = 'white';
+  let dragging = false, dragStart = { x: 0, y: 0 }, dragOrigin = { x: 0, y: 0 };
+  let originalObjectUrl = null, cutoutObjectUrl = null;
+
+  const fileInput = document.getElementById('fileInput');
+  const fileName = document.getElementById('fileName');
+  const cropContainer = document.getElementById('cropContainer');
+  const cropImage = document.getElementById('cropImage');
+  const cropPlaceholder = document.getElementById('cropPlaceholder');
+  const cropSpinner = document.getElementById('cropSpinner');
+  const zoomSlider = document.getElementById('zoomSlider');
+  const zoomValue = document.getElementById('zoomValue');
+  const sizeGroup = document.getElementById('sizeGroup');
+  const layoutGroup = document.getElementById('layoutGroup');
+  const bgToggle = document.getElementById('bgToggle');
+  const bgToggleRow = document.getElementById('bgToggleRow');
+  const bgColorGroup = document.getElementById('bgColorGroup');
+  const bgStatus = document.getElementById('bgStatus');
+  const bgStatusText = document.getElementById('bgStatusText');
+  const bgError = document.getElementById('bgError');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const outputBox = document.getElementById('outputBox');
+  const outputCanvas = document.getElementById('outputCanvas');
+  const outputPlaceholder = document.getElementById('outputPlaceholder');
+  const layoutInfo = document.getElementById('layoutInfo');
+
+  function currentCropAspect() {
+    const key = sizeMode === 'mixed' ? '2inch' : sizeMode;
+    return SIZES[key];
+  }
+
+  function setContainerAspect() {
+    const s = currentCropAspect();
+    cropContainer.style.aspectRatio = `${s.w} / ${s.h}`;
+  }
+  setContainerAspect();
+
+  // The output box's height must always follow the crop box's height
+  // explicitly — never the other way around. Relying on flex
+  // align-items:stretch for this is what caused the bug where
+  // switching to a portrait A4 layout (a very tall canvas) inflated
+  // the *hypothetical* cross size of the flex row before the canvas's
+  // own max-height could constrain it, stretching the crop box taller
+  // than its aspect-ratio and silently shifting the crop framing.
+  function syncPreviewHeights() {
+    const isRow = window.matchMedia('(min-width: 641px)').matches;
+    if (isRow) {
+      const h = cropContainer.getBoundingClientRect().height;
+      outputBox.style.height = h + 'px';
+    } else {
+      outputBox.style.height = '';
+    }
+  }
+  requestAnimationFrame(syncPreviewHeights);
+
+  function setSelected(group, selector, matchFn) {
+    [...group.querySelectorAll(selector)].forEach(btn => {
+      btn.classList.toggle('selected', matchFn(btn));
+    });
+  }
+
+  function applyPreviewBackground() {
+    cropContainer.style.backgroundImage = '';
+    cropContainer.style.backgroundColor = '';
+    cropContainer.style.backgroundSize = '';
+    cropContainer.style.backgroundRepeat = '';
+    if (bgMode === 'removed' && bgType === 'blue') {
+      cropContainer.style.backgroundImage = BLUE_GRADIENT_CSS;
+      cropContainer.style.backgroundSize = '100% 100%';
+      cropContainer.style.backgroundRepeat = 'no-repeat';
+    } else {
+      cropContainer.style.backgroundColor = '#ffffff';
+    }
+  }
+
+  function clampTranslate() {
+    const rect = cropContainer.getBoundingClientRect();
+    const iw = naturalW * scale;
+    const ih = naturalH * scale;
+    const minX = Math.min(0, rect.width - iw);
+    const minY = Math.min(0, rect.height - ih);
+    translateX = Math.max(minX, Math.min(0, translateX));
+    translateY = Math.max(minY, Math.min(0, translateY));
+  }
+
+  function applyTransform() {
+    cropImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+  }
+
+  function fitImageToContainer() {
+    const rect = cropContainer.getBoundingClientRect();
+    baseScale = Math.max(rect.width / naturalW, rect.height / naturalH);
+    scale = baseScale;
+    translateX = (rect.width - naturalW * scale) / 2;
+    translateY = (rect.height - naturalH * scale) / 2;
+    zoomSlider.value = 100;
+    zoomValue.textContent = '100%';
+    clampTranslate();
+    applyTransform();
+    syncPreviewHeights();
+  }
+
+  function resetOutput() {
+    outputCanvas.style.display = 'none';
+    outputPlaceholder.style.display = 'flex';
+    downloadBtn.disabled = true;
+    layoutInfo.textContent = '';
+  }
+
+  function showActiveImage(image) {
+    img = image;
+    cropImage.src = image.src;
+    cropImage.style.width = naturalW + 'px';
+    cropImage.style.height = naturalH + 'px';
+    cropImage.style.display = 'block';
+    cropPlaceholder.style.display = 'none';
+    applyPreviewBackground();
+  }
+
+  function setBgControlsEnabled(enabled) {
+    bgToggle.disabled = !enabled;
+  }
+
+  function setColorButtonsEnabled(enabled) {
+    [...bgColorGroup.querySelectorAll('.option-btn')].forEach(b => b.disabled = !enabled);
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    resetOutput();
+    bgError.classList.remove('active');
+    bgStatus.classList.remove('active');
+    cropSpinner.classList.remove('active');
+
+    originalFile = file;
+    cutoutImg = null;
+    if (cutoutObjectUrl) { URL.revokeObjectURL(cutoutObjectUrl); cutoutObjectUrl = null; }
+    if (originalObjectUrl) URL.revokeObjectURL(originalObjectUrl);
+    originalObjectUrl = URL.createObjectURL(file);
+
+    const image = new Image();
+    image.onload = () => {
+      originalImg = image;
+      naturalW = image.naturalWidth;
+      naturalH = image.naturalHeight;
+
+      bgMode = 'original';
+      bgToggle.checked = false;
+      bgToggleRow.classList.remove('checked');
+      setColorButtonsEnabled(false);
+      setBgControlsEnabled(true);
+
+      showActiveImage(originalImg);
+      zoomSlider.disabled = false;
+
+      fileName.textContent = file.name;
+      fileName.style.display = 'block';
+
+      requestAnimationFrame(() => { fitImageToContainer(); scheduleRegenerate(); });
+    };
+    image.src = originalObjectUrl;
+  });
+
+  bgToggle.addEventListener('change', async () => {
+    if (!originalImg) return;
+
+    if (!bgToggle.checked) {
+      bgMode = 'original';
+      bgToggleRow.classList.remove('checked');
+      setColorButtonsEnabled(false);
+      showActiveImage(originalImg);
+      scheduleRegenerate();
+      return;
+    }
+
+    bgToggleRow.classList.add('checked');
+
+    if (cutoutImg) {
+      bgMode = 'removed';
+      setColorButtonsEnabled(true);
+      showActiveImage(cutoutImg);
+      scheduleRegenerate();
+      return;
+    }
+
+    bgError.classList.remove('active');
+    bgStatus.classList.add('active');
+    cropSpinner.classList.add('active');
+    bgToggle.disabled = true;
+
+    try {
+      const resultBlob = await imglyRemoveBackground(originalFile, {
+        progress: (key, current, total) => {
+          bgStatusText.textContent = `AI 去背處理中（${current}/${total}）…`;
+        }
+      });
+      cutoutObjectUrl = URL.createObjectURL(resultBlob);
+      const cImage = new Image();
+      cImage.onload = () => {
+        cutoutImg = cImage;
+        bgMode = 'removed';
+        cropSpinner.classList.remove('active');
+        bgStatus.classList.remove('active');
+        bgToggle.disabled = false;
+        setColorButtonsEnabled(true);
+        showActiveImage(cutoutImg);
+        scheduleRegenerate();
+      };
+      cImage.src = cutoutObjectUrl;
+    } catch (err) {
+      console.error(err);
+      cropSpinner.classList.remove('active');
+      bgStatus.classList.remove('active');
+      bgError.classList.add('active');
+      bgToggle.disabled = false;
+      bgToggle.checked = false;
+      bgToggleRow.classList.remove('checked');
+      bgMode = 'original';
+      setColorButtonsEnabled(false);
+      showActiveImage(originalImg);
+    }
+  });
+
+  bgColorGroup.addEventListener('click', (e) => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn || btn.disabled) return;
+    setSelected(bgColorGroup, '.option-btn', b => b === btn);
+    bgType = btn.dataset.color;
+    if (bgMode === 'removed') applyPreviewBackground();
+    scheduleRegenerate();
+  });
+
+  cropImage.addEventListener('pointerdown', (e) => {
+    if (!img) return;
+    dragging = true;
+    dragStart = { x: e.clientX, y: e.clientY };
+    dragOrigin = { x: translateX, y: translateY };
+    cropImage.setPointerCapture(e.pointerId);
+  });
+  cropImage.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    translateX = dragOrigin.x + (e.clientX - dragStart.x);
+    translateY = dragOrigin.y + (e.clientY - dragStart.y);
+    clampTranslate();
+    applyTransform();
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+    cropImage.addEventListener(evt, () => {
+      if (dragging) { dragging = false; scheduleRegenerate(); }
+    });
+  });
+
+  zoomSlider.addEventListener('input', () => {
+    if (!img) return;
+    zoomValue.textContent = zoomSlider.value + '%';
+    const rect = cropContainer.getBoundingClientRect();
+    const newScale = baseScale * (zoomSlider.value / 100);
+    const centerImgX = (rect.width / 2 - translateX) / scale;
+    const centerImgY = (rect.height / 2 - translateY) / scale;
+    translateX = rect.width / 2 - centerImgX * newScale;
+    translateY = rect.height / 2 - centerImgY * newScale;
+    scale = newScale;
+    clampTranslate();
+    applyTransform();
+  });
+  zoomSlider.addEventListener('change', () => { scheduleRegenerate(); });
+
+  window.addEventListener('resize', () => {
+    if (img) { fitImageToContainer(); } else { syncPreviewHeights(); }
+  });
+
+  sizeGroup.addEventListener('click', (e) => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn) return;
+    setSelected(sizeGroup, '.option-btn', b => b === btn);
+    sizeMode = btn.dataset.mode;
+    setContainerAspect();
+    if (img) {
+      requestAnimationFrame(() => { fitImageToContainer(); scheduleRegenerate(); });
+    } else {
+      requestAnimationFrame(syncPreviewHeights);
+    }
+  });
+
+  layoutGroup.addEventListener('click', (e) => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn) return;
+    setSelected(layoutGroup, '.option-btn', b => b === btn);
+    layoutType = btn.dataset.layout;
+    scheduleRegenerate();
+  });
+
+  function getCropState() {
+    const rect = cropContainer.getBoundingClientRect();
+    return {
+      centerX: (rect.width / 2 - translateX) / scale,
+      centerY: (rect.height / 2 - translateY) / scale,
+      zoomFactor: scale / baseScale,
+    };
+  }
+
+  function drawBackground(ctx, outW, outH) {
+    if (bgMode === 'removed' && bgType === 'blue') {
+      paintBlueGradient(ctx, outW, outH);
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+    }
+  }
+
+  function renderPhotoCanvas(outW, outH) {
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    drawBackground(ctx, outW, outH);
+
+    const state = getCropState();
+    const targetBaseScale = Math.max(outW / naturalW, outH / naturalH);
+    const targetScale = targetBaseScale * state.zoomFactor;
+    const tx = outW / 2 - state.centerX * targetScale;
+    const ty = outH / 2 - state.centerY * targetScale;
+
+    ctx.drawImage(
+      img,
+      0, 0, naturalW, naturalH,
+      tx, ty,
+      naturalW * targetScale, naturalH * targetScale
+    );
+    return canvas;
+  }
+
+  function getPaperPx() {
+    let paperWcm, paperHcm;
+    if (layoutType === '4x6') {
+      paperWcm = 15.24; paperHcm = 10.16;
+    } else {
+      paperWcm = 21; paperHcm = 29.7;
+    }
+    return { paperWcm, paperHcm, paperWpx: cmToPx(paperWcm), paperHpx: cmToPx(paperHcm) };
+  }
+
+  function buildSingleSizeLayout(paper) {
+    const size = SIZES[sizeMode];
+    const photoWpx = cmToPx(size.w);
+    const photoHpx = cmToPx(size.h);
+    const photoCanvas = renderPhotoCanvas(photoWpx, photoHpx);
+
+    const marginPx = cmToPx(0.3);
+    const gapPx = cmToPx(0.2);
+
+    const usableW = paper.paperWpx - marginPx * 2;
+    const usableH = paper.paperHpx - marginPx * 2;
+    const cols = Math.max(1, Math.floor((usableW + gapPx) / (photoWpx + gapPx)));
+    const rows = Math.max(1, Math.floor((usableH + gapPx) / (photoHpx + gapPx)));
+
+    const gridW = cols * photoWpx + (cols - 1) * gapPx;
+    const gridH = rows * photoHpx + (rows - 1) * gapPx;
+    const offsetX = (paper.paperWpx - gridW) / 2;
+    const offsetY = (paper.paperHpx - gridH) / 2;
+
+    const ctx = paper.ctx;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = offsetX + c * (photoWpx + gapPx);
+        const y = offsetY + r * (photoHpx + gapPx);
+        ctx.drawImage(photoCanvas, x, y);
+        drawCutGuide(ctx, x, y, photoWpx, photoHpx);
+      }
+    }
+    return { count: rows * cols, cols, rows };
+  }
+
+  function buildMixedLayout(paper) {
+    const big = SIZES['2inch'];
+    const small = SIZES['1inch'];
+    const bigWpx = cmToPx(big.w), bigHpx = cmToPx(big.h);
+    const smallWpx = cmToPx(small.w), smallHpx = cmToPx(small.h);
+    const gapPx = cmToPx(0.2);
+    const rowGapPx = cmToPx(0.3);
+
+    const bigCanvas = renderPhotoCanvas(bigWpx, bigHpx);
+    const smallCanvas = renderPhotoCanvas(smallWpx, smallHpx);
+
+    const bigRowW = 4 * bigWpx + 3 * gapPx;
+    const smallRowW = 4 * smallWpx + 3 * gapPx;
+    const blockH = bigHpx + rowGapPx + smallHpx;
+
+    const blockX1 = (paper.paperWpx - bigRowW) / 2;
+    const blockX2 = (paper.paperWpx - smallRowW) / 2;
+    const blockY = (paper.paperHpx - blockH) / 2;
+
+    const ctx = paper.ctx;
+    for (let i = 0; i < 4; i++) {
+      const x = blockX1 + i * (bigWpx + gapPx);
+      ctx.drawImage(bigCanvas, x, blockY);
+      drawCutGuide(ctx, x, blockY, bigWpx, bigHpx);
+    }
+    const row2Y = blockY + bigHpx + rowGapPx;
+    for (let i = 0; i < 4; i++) {
+      const x = blockX2 + i * (smallWpx + gapPx);
+      ctx.drawImage(smallCanvas, x, row2Y);
+      drawCutGuide(ctx, x, row2Y, smallWpx, smallHpx);
+    }
+    return { count: 8, cols: null, rows: null };
+  }
+
+  function drawCutGuide(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.restore();
+  }
+
+  function generateLayout() {
+    if (!img) return;
+
+    const { paperWpx, paperHpx } = getPaperPx();
+    const paperCanvas = document.createElement('canvas');
+    paperCanvas.width = paperWpx;
+    paperCanvas.height = paperHpx;
+    const ctx = paperCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, paperWpx, paperHpx);
+
+    const paper = { paperWpx, paperHpx, ctx };
+    const result = sizeMode === 'mixed' ? buildMixedLayout(paper) : buildSingleSizeLayout(paper);
+
+    outputCanvas.width = paperWpx;
+    outputCanvas.height = paperHpx;
+    outputCanvas.getContext('2d').drawImage(paperCanvas, 0, 0);
+
+    outputCanvas.style.display = 'block';
+    outputPlaceholder.style.display = 'none';
+    downloadBtn.disabled = false;
+
+    const paperLabel = layoutType === '4x6' ? '4×6 相片紙' : 'A4 紙張';
+    if (sizeMode === 'mixed') {
+      layoutInfo.textContent = paperLabel + '．混合排版：4 張 2 吋 + 4 張 1 吋';
+    } else {
+      layoutInfo.textContent = paperLabel + '．共 ' + result.count + ' 張（' + result.cols + ' × ' + result.rows + '）';
+    }
+  }
+
+  let regenTimer = null;
+  function scheduleRegenerate() {
+    if (!img) return;
+    clearTimeout(regenTimer);
+    regenTimer = setTimeout(() => { generateLayout(); }, 120);
+  }
+
+  downloadBtn.addEventListener('click', () => {
+    outputCanvas.toBlob((blob) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'ID-photo-' + sizeMode + '-' + layoutType + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }, 'image/png', 1.0);
+  });
+</script>
+</body>
+</html>
