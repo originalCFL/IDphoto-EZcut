@@ -365,6 +365,23 @@
     color: var(--ink-faint);
     text-align: right;
   }
+  .site-footer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 4px 20px 28px;
+    text-align: center;
+  }
+  .site-footer p {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    margin: 0;
+    line-height: 1.6;
+  }
+  .site-footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .site-footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -484,6 +501,14 @@
     </section>
 
   </main>
+
+  <footer class="site-footer">
+    <p>
+      本工具以 <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> 授權釋出，原始碼：
+      <a id="sourceLink" href="https://github.com/YOUR-USERNAME/YOUR-REPO" target="_blank" rel="noopener">GitHub</a>
+      ．去背功能使用 <a href="https://github.com/imgly/background-removal-js" target="_blank" rel="noopener">@imgly/background-removal</a>（AGPL-3.0）
+    </p>
+  </footer>
 
 <script type="module">
   import { removeBackground as imglyRemoveBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm";

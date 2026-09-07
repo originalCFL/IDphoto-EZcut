@@ -1,0 +1,43 @@
+ID Photo Layout Tool
+Copyright (C) 2025 [YOUR NAME / ORGANIZATION HERE]
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
+
+===============================================================================
+ACTION REQUIRED BEFORE PUBLISHING
+===============================================================================
+
+This file needs to contain the COMPLETE, UNMODIFIED, VERBATIM text of the
+GNU Affero General Public License v3.0 below this line. It was intentionally
+left out of this generated file to avoid transcription risk in a legal
+document — please insert the official text yourself using ONE of these
+exactly-equivalent methods:
+
+  Option A (recommended, zero-risk):
+    On GitHub: "Add file" → "Create new file" → name it LICENSE → click
+    "Choose a license template" → select "GNU Affero General Public
+    License v3.0". GitHub will insert the exact official text for you,
+    replacing this placeholder file entirely.
+
+  Option B:
+    Download the canonical plain-text file yourself and use it to replace
+    everything below this line (keep the copyright header above intact):
+    https://www.gnu.org/licenses/agpl-3.0.txt
+
+Once you've done either of the above, delete this "ACTION REQUIRED" block —
+the copyright/license header above it should stay, since that's the
+standard per-file notice the AGPL itself recommends attaching to your own
+source files (see the "How to Apply These Terms" section at the end of the
+official license text).
