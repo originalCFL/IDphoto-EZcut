@@ -465,14 +465,6 @@
       </div>
 
       <div class="field">
-        <div class="zoom-label-row">
-          <p class="field-label" style="margin:0;">縮放照片</p>
-          <span class="zoom-value" id="zoomValue">100%</span>
-        </div>
-        <input id="zoomSlider" type="range" min="100" max="400" value="100" disabled>
-      </div>
-
-      <div class="field">
         <button id="downloadBtn" class="btn btn-primary" disabled>下載 PNG</button>
       </div>
     </section>
@@ -480,7 +472,7 @@
     <!-- RIGHT: crop editor + live layout preview, side by side -->
     <section class="panel">
       <h2 class="panel-title">裁切與排版預覽</h2>
-      <p class="panel-hint">拖曳圖片調整頭像位置，滑桿縮放；選好紙張後排版預覽會自動更新。</p>
+      <p class="panel-hint">在裁切區直接拖曳圖片調整位置；手機可用雙指捏合縮放。選好紙張後，排版預覽會自動更新。</p>
 
       <div class="preview-row">
         <div id="cropContainer" class="box crop-box">
@@ -551,7 +543,11 @@
   let layoutType = '4x6';
   let bgMode = 'original';
   let bgType = 'white';
-  let dragging = false, dragStart = { x: 0, y: 0 }, dragOrigin = { x: 0, y: 0 };
+  const activePointers = new Map();
+  let dragStart = null, dragOrigin = null;
+  let pinchStartDistance = 0, pinchStartScale = 1;
+  let pinchImagePoint = null;
+  let cropViewport = { width: 0, height: 0 };
   let originalObjectUrl = null, cutoutObjectUrl = null;
 
   const fileInput = document.getElementById('fileInput');
@@ -561,8 +557,6 @@
   const cropImage = document.getElementById('cropImage');
   const cropPlaceholder = document.getElementById('cropPlaceholder');
   const cropSpinner = document.getElementById('cropSpinner');
-  const zoomSlider = document.getElementById('zoomSlider');
-  const zoomValue = document.getElementById('zoomValue');
   const sizeGroup = document.getElementById('sizeGroup');
   const layoutGroup = document.getElementById('layoutGroup');
   const bgToggle = document.getElementById('bgToggle');
@@ -646,8 +640,26 @@
     scale = baseScale;
     translateX = (rect.width - naturalW * scale) / 2;
     translateY = (rect.height - naturalH * scale) / 2;
-    zoomSlider.value = 100;
-    zoomValue.textContent = '100%';
+    cropViewport = { width: rect.width, height: rect.height };
+    clampTranslate();
+    applyTransform();
+    syncPreviewHeights();
+  }
+
+  function resizeImageToContainerPreservingCrop() {
+    const rect = cropContainer.getBoundingClientRect();
+    if (!cropViewport.width || !cropViewport.height) {
+      fitImageToContainer();
+      return;
+    }
+    const centerX = (cropViewport.width / 2 - translateX) / scale;
+    const centerY = (cropViewport.height / 2 - translateY) / scale;
+    const zoomFactor = scale / baseScale;
+    baseScale = Math.max(rect.width / naturalW, rect.height / naturalH);
+    scale = Math.min(baseScale * 4, Math.max(baseScale, baseScale * zoomFactor));
+    translateX = rect.width / 2 - centerX * scale;
+    translateY = rect.height / 2 - centerY * scale;
+    cropViewport = { width: rect.width, height: rect.height };
     clampTranslate();
     applyTransform();
     syncPreviewHeights();
@@ -724,8 +736,6 @@
       setBgControlsEnabled(true);
 
       showActiveImage(originalImg);
-      zoomSlider.disabled = false;
-
       fileName.textContent = file.name;
       fileName.style.display = 'block';
 
@@ -810,43 +820,91 @@
     scheduleRegenerate();
   });
 
-  cropImage.addEventListener('pointerdown', (e) => {
+  function pointerPair() {
+    return [...activePointers.values()].slice(0, 2);
+  }
+
+  function pointerDistance(a, b) {
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  }
+
+  function beginPinch() {
+    const [a, b] = pointerPair();
+    if (!a || !b) return;
+    const rect = cropContainer.getBoundingClientRect();
+    const midX = (a.x + b.x) / 2 - rect.left;
+    const midY = (a.y + b.y) / 2 - rect.top;
+    pinchStartDistance = Math.max(1, pointerDistance(a, b));
+    pinchStartScale = scale;
+    pinchImagePoint = {
+      x: (midX - translateX) / scale,
+      y: (midY - translateY) / scale,
+    };
+  }
+
+  cropContainer.addEventListener('pointerdown', (e) => {
     if (!img) return;
-    dragging = true;
-    dragStart = { x: e.clientX, y: e.clientY };
-    dragOrigin = { x: translateX, y: translateY };
-    cropImage.setPointerCapture(e.pointerId);
-  });
-  cropImage.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    translateX = dragOrigin.x + (e.clientX - dragStart.x);
-    translateY = dragOrigin.y + (e.clientY - dragStart.y);
-    clampTranslate();
-    applyTransform();
-  });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
-    cropImage.addEventListener(evt, () => {
-      if (dragging) { dragging = false; scheduleRegenerate(); }
-    });
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    cropContainer.setPointerCapture(e.pointerId);
+    if (activePointers.size === 1) {
+      dragStart = { x: e.clientX, y: e.clientY };
+      dragOrigin = { x: translateX, y: translateY };
+    } else if (activePointers.size === 2) {
+      beginPinch();
+    }
   });
 
-  zoomSlider.addEventListener('input', () => {
-    if (!img) return;
-    zoomValue.textContent = zoomSlider.value + '%';
-    const rect = cropContainer.getBoundingClientRect();
-    const newScale = baseScale * (zoomSlider.value / 100);
-    const centerImgX = (rect.width / 2 - translateX) / scale;
-    const centerImgY = (rect.height / 2 - translateY) / scale;
-    translateX = rect.width / 2 - centerImgX * newScale;
-    translateY = rect.height / 2 - centerImgY * newScale;
-    scale = newScale;
+  cropContainer.addEventListener('pointermove', (e) => {
+    if (!activePointers.has(e.pointerId)) return;
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointers.size >= 2 && pinchImagePoint) {
+      const [a, b] = pointerPair();
+      const rect = cropContainer.getBoundingClientRect();
+      const midX = (a.x + b.x) / 2 - rect.left;
+      const midY = (a.y + b.y) / 2 - rect.top;
+      const ratio = pointerDistance(a, b) / pinchStartDistance;
+      const newScale = Math.min(baseScale * 4, Math.max(baseScale, pinchStartScale * ratio));
+      translateX = midX - pinchImagePoint.x * newScale;
+      translateY = midY - pinchImagePoint.y * newScale;
+      scale = newScale;
+    } else if (activePointers.size === 1 && dragStart && dragOrigin) {
+      translateX = dragOrigin.x + (e.clientX - dragStart.x);
+      translateY = dragOrigin.y + (e.clientY - dragStart.y);
+    }
+
     clampTranslate();
     applyTransform();
   });
-  zoomSlider.addEventListener('change', () => { scheduleRegenerate(); });
+
+  function endPointer(e) {
+    if (!activePointers.has(e.pointerId)) return;
+    activePointers.delete(e.pointerId);
+    pinchImagePoint = null;
+    if (activePointers.size === 1) {
+      const remaining = [...activePointers.values()][0];
+      dragStart = { x: remaining.x, y: remaining.y };
+      dragOrigin = { x: translateX, y: translateY };
+    } else {
+      dragStart = null;
+      dragOrigin = null;
+      scheduleRegenerate();
+    }
+  }
+
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(evt => {
+    cropContainer.addEventListener(evt, endPointer);
+  });
 
   window.addEventListener('resize', () => {
-    if (img) { fitImageToContainer(); } else { syncPreviewHeights(); }
+    if (img) {
+      requestAnimationFrame(() => {
+        resizeImageToContainerPreservingCrop();
+        scheduleRegenerate();
+      });
+    } else {
+      syncPreviewHeights();
+    }
   });
 
   sizeGroup.addEventListener('click', (e) => {
