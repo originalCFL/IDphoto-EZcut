@@ -403,8 +403,9 @@
           <span class="main-text">＋ 上傳人物照片</span>
           <span class="sub-text">JPG、PNG、WEBP</span>
         </label>
-        <input id="fileInput" type="file" accept="image/*" style="display:none;">
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" style="display:none;">
         <p id="fileName" class="file-name" style="display:none;"></p>
+        <p id="fileError" class="error-line" role="alert"></p>
       </div>
 
       <div class="field">
@@ -555,6 +556,7 @@
 
   const fileInput = document.getElementById('fileInput');
   const fileName = document.getElementById('fileName');
+  const fileError = document.getElementById('fileError');
   const cropContainer = document.getElementById('cropContainer');
   const cropImage = document.getElementById('cropImage');
   const cropPlaceholder = document.getElementById('cropPlaceholder');
@@ -676,9 +678,27 @@
     [...bgColorGroup.querySelectorAll('.option-btn')].forEach(b => b.disabled = !enabled);
   }
 
+  const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
+
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    fileError.classList.remove('active');
+    fileError.textContent = '';
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      fileError.textContent = '僅支援 JPG、PNG 或 WEBP 圖片。';
+      fileError.classList.add('active');
+      fileInput.value = '';
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      fileError.textContent = '圖片不可超過 20 MB，請縮小檔案後再試。';
+      fileError.classList.add('active');
+      fileInput.value = '';
+      return;
+    }
 
     resetOutput();
     bgError.classList.remove('active');
@@ -710,6 +730,13 @@
       fileName.style.display = 'block';
 
       requestAnimationFrame(() => { fitImageToContainer(); scheduleRegenerate(); });
+    };
+    image.onerror = () => {
+      fileError.textContent = '無法讀取這張圖片，請改用有效的 JPG、PNG 或 WEBP 檔案。';
+      fileError.classList.add('active');
+      URL.revokeObjectURL(originalObjectUrl);
+      originalObjectUrl = null;
+      fileInput.value = '';
     };
     image.src = originalObjectUrl;
   });
