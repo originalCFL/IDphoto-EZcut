@@ -474,7 +474,7 @@
     <!-- RIGHT: crop editor + live layout preview, side by side -->
     <section class="panel">
       <h2 class="panel-title">裁切與排版預覽</h2>
-      <p class="panel-hint">在裁切區直接拖曳圖片調整位置；手機可用雙指捏合縮放。選好紙張後，排版預覽會自動更新。</p>
+      <p class="panel-hint">在裁切區直接拖曳圖片調整位置；電腦使用滑鼠滾輪縮放，手機使用雙指捏合縮放。選好紙張後，排版預覽會自動更新。</p>
 
       <div class="preview-row">
         <div id="cropContainer" class="box crop-box">
@@ -897,6 +897,25 @@
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(evt => {
     cropContainer.addEventListener(evt, endPointer);
   });
+
+  cropContainer.addEventListener('wheel', (e) => {
+    if (!img) return;
+    e.preventDefault();
+    const rect = cropContainer.getBoundingClientRect();
+    const focusX = e.clientX - rect.left;
+    const focusY = e.clientY - rect.top;
+    const imageX = (focusX - translateX) / scale;
+    const imageY = (focusY - translateY) / scale;
+    const zoomStep = Math.exp(-e.deltaY * 0.0015);
+    const newScale = Math.min(baseScale * 4, Math.max(baseScale, scale * zoomStep));
+
+    translateX = focusX - imageX * newScale;
+    translateY = focusY - imageY * newScale;
+    scale = newScale;
+    clampTranslate();
+    applyTransform();
+    scheduleRegenerate();
+  }, { passive: false });
 
   window.addEventListener('resize', () => {
     if (img) {
