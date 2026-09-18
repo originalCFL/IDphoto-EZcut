@@ -11,7 +11,7 @@ has no backend.
 
 ## Features
 
-- Upload a photo (JPG / PNG / WEBP), drag to reposition, slider to zoom
+- Upload a photo (JPG / PNG / WEBP), drag to reposition, mouse-wheel zoom on desktop, and pinch zoom on touch devices
 - Standard sizes: 2" (3.5×4.5cm), 1" (2.8×3.5cm), or a mixed sheet
   (4× 2" + 4× 1")
 - Optional AI background removal, running fully client-side, with a
@@ -40,7 +40,7 @@ step, no server, no npm install required.
 ## License
 
 This project is licensed under the **GNU Affero General Public License
-v3.0 (AGPL-3.0-only)** — see [`LICENSE`](./LICENSE).
+v3.0 (AGPL-3.0-or-later)** — see [`LICENSE`](./LICENSE).
 
 This is not the default choice for a small client-side tool; it's
 required here because the app dynamically loads and directly drives
@@ -55,9 +55,7 @@ to get the exact corresponding source code of what's running. Keeping
 this repository public with the deployed code is the baseline
 requirement — for full compliance you should also add a visible link
 back to this repository somewhere in the running app's UI (e.g. a footer
-"原始碼 / Source code" link). That link is **not yet present** in
-`index.html` as of this write-up — add one before you publish, or ask
-for it to be added.
+"原始碼 / Source code" link). A visible source-code link is included in the application footer.
 
 ## Disclaimer
 
@@ -72,3 +70,8 @@ guaranteed to match every issuing authority's current requirements).
 
 See [`NOTICE.md`](./NOTICE.md) for the full list of third-party
 components loaded at runtime and their licenses.
+
+
+## Public-use safety and privacy
+
+The deployed UI links to `PRIVACY.md`, `TERMS.md`, and `NOTICE.md`. Photos are processed locally and are not uploaded to a project-controlled server. External requests still occur for Google Fonts and, when AI background removal is enabled, jsDelivr / IMG.LY resources. Output must be checked against the latest rules of the relevant issuing authority.
