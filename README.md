@@ -21,13 +21,12 @@ has no backend.
 
 ## Privacy
 
-- No server component. No analytics. No image ever leaves the browser.
-- Two things are still fetched from external CDNs, which — as an
-  unavoidable side effect of any HTTP request — reveal the visitor's IP
-  address to those third parties:
-  - `@imgly/background-removal` and its AI model files, from jsDelivr /
-    IMG.LY's CDN (only if the visitor turns on "AI 去背")
-  - The Noto Sans TC web font, from Google Fonts
+- No project-controlled server component or analytics. The application does not upload images; photo processing runs in the browser.
+- If the visitor turns on "AI 去背", `@imgly/background-removal` and its
+  AI model files are loaded from jsDelivr / IMG.LY. The resulting HTTP
+  requests reveal ordinary connection information such as the visitor's
+  IP address to those third parties.
+- The interface uses system fonts and does not connect to Google Fonts.
 - If you deploy this publicly, consider mentioning the above in your own
   privacy notice, especially for EU visitors (see `NOTICE.md`).
 
@@ -74,4 +73,6 @@ components loaded at runtime and their licenses.
 
 ## Public-use safety and privacy
 
-The deployed UI links to `PRIVACY.md`, `TERMS.md`, and `NOTICE.md`. Photos are processed locally and are not uploaded to a project-controlled server. External requests still occur for Google Fonts and, when AI background removal is enabled, jsDelivr / IMG.LY resources. Output must be checked against the latest rules of the relevant issuing authority.
+The deployed UI links to `PRIVACY.md`, `TERMS.md`, and `NOTICE.md`. Photos are processed locally and are not uploaded to a project-controlled server. External requests for jsDelivr / IMG.LY resources occur only when AI background removal is enabled. The listed photo sizes are common layout sizes, not an official compliance check; output must be checked against the latest rules of the relevant issuing authority.
+
+Project contact: [originalcfl.projects@gmail.com](mailto:originalcfl.projects@gmail.com?subject=%5BIDphoto-EZcut%5D%20Question)

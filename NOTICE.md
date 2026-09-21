@@ -10,7 +10,7 @@ must stay intact.
 ## 1. @imgly/background-removal
 
 - **What it's used for:** the "AI 去背" (AI background removal) feature.
-- **How it's loaded:** dynamically imported at runtime from a CDN
+- **How it's loaded:** dynamically imported only after the visitor enables AI background removal, from a CDN
   (`https://cdn.jsdelivr.net/npm/@imgly/background-removal@.../+esm`) — it is
   **not** copied, bundled, minified, or modified by this project in any way.
 - **Copyright:** © IMG.LY GmbH.
@@ -29,18 +29,9 @@ must stay intact.
   If that applies to you, confirm current terms directly with IMG.LY —
   don't rely on this note, which may be out of date.
 
-## 2. Noto Sans TC (Google Fonts)
+## 2. System fonts
 
-- **What it's used for:** the page's Traditional Chinese typeface, loaded
-  via `<link>` tags to `fonts.googleapis.com` / `fonts.gstatic.com`.
-- **License:** SIL Open Font License 1.1 (permissive; no copyleft
-  obligation on your own code).
-- **Source:** https://fonts.google.com/noto/specimen/Noto+Sans+TC
-- **Privacy note (not a license issue, but worth disclosing):** loading
-  fonts directly from Google's CDN sends each visitor's IP address to
-  Google as an ordinary side effect of the HTTP request. If you expect EU
-  visitors, consider mentioning this in a privacy note, or self-hosting the
-  font file instead of loading it from Google's servers.
+The application uses the visitor's operating-system font stack and does not download a web font from Google Fonts or another font CDN.
 
 ---
 

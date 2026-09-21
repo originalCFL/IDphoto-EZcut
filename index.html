@@ -6,8 +6,6 @@
 <meta name="description" content="免費的瀏覽器端證件照裁切、去背與排版工具；照片不會上傳至本網站伺服器。">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>證件照排版工具｜本機裁切、去背與排版</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink: #1c2530;
@@ -28,7 +26,7 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: 'Noto Sans TC', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
     background: var(--page-bg);
     color: var(--ink);
     min-height: 100vh;
@@ -424,7 +422,7 @@
   </div>
 
   <aside class="notice-card" aria-label="使用與隱私提醒">
-    <strong>使用與隱私提醒：</strong>照片在您的瀏覽器內處理，不會上傳至本站伺服器。啟用 AI 去背時，瀏覽器會向 jsDelivr／IMG.LY 下載程式與模型；載入字型時會連線至 Google。各機關的證件照規格可能不同，送件前請以受理機關最新規定為準，並自行檢查去背與輸出結果。
+    <strong>使用與隱私提醒：</strong>照片在您的瀏覽器內處理，不會上傳至本站伺服器。只有啟用 AI 去背後，瀏覽器才會向 jsDelivr／IMG.LY 下載程式與模型。各機關的證件照規格可能不同，送件前請以受理機關最新規定為準，並自行檢查去背與輸出結果。
   </aside>
 
   <main class="app-main">
@@ -444,7 +442,7 @@
       </div>
 
       <div class="field">
-        <p class="field-label">證件照尺寸</p>
+        <p class="field-label">常見排版尺寸</p>
         <div class="option-grid cols-3" id="sizeGroup">
           <button type="button" data-mode="2inch" class="option-btn selected">
             <span class="label">2 吋</span>
@@ -536,16 +534,15 @@
       <a href="https://github.com/originalCFL/IDphoto-EZcut/blob/main/TERMS.md" target="_blank" rel="noopener">使用條款與免責聲明</a> ·
       <a href="https://github.com/originalCFL/IDphoto-EZcut/blob/main/NOTICE.md" target="_blank" rel="noopener">第三方授權</a> ·
       <a id="sourceLink" href="https://github.com/originalcfl/IDphoto-EZcut" target="_blank" rel="noopener">完整原始碼</a>
+      · <a href="mailto:originalcfl.projects@gmail.com?subject=%5BIDphoto-EZcut%5D%20問題回報">聯絡與問題回報</a>
     </p>
     <details class="legal-details">
       <summary>重要說明</summary>
-      <p>本工具不是政府機關或證件核發單位，亦不保證輸出符合所有申請規格。使用者應確認其有權處理所選照片，並在下載、列印及送件前自行檢查結果。本工具依 AGPL-3.0 以現況提供；法律不允許排除的責任不受本聲明影響。</p>
+      <p>本工具不是政府機關或證件核發單位，亦不檢查頭部比例、眼睛位置、拍攝日期或其他申請規格。使用者應確認其有權處理所選照片；處理他人或兒少照片時，應取得適當授權。請在下載、列印及送件前自行檢查結果。本工具依 AGPL-3.0 以現況提供；法律不允許排除的責任不受本聲明影響。</p>
     </details>
   </footer>
 
 <script type="module">
-  import { removeBackground as imglyRemoveBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm";
-
   const DPI = 300;
   const cmToPx = (cm) => Math.round((cm / 2.54) * DPI);
 
@@ -732,6 +729,16 @@
 
   const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
   const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
+  const MAX_IMAGE_EDGE = 16000;
+  const MAX_IMAGE_PIXELS = 60_000_000;
+  let imglyRemoveBackground = null;
+
+  async function loadBackgroundRemoval() {
+    if (imglyRemoveBackground) return imglyRemoveBackground;
+    const module = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+    imglyRemoveBackground = module.removeBackground;
+    return imglyRemoveBackground;
+  }
 
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -765,6 +772,25 @@
 
     const image = new Image();
     image.onload = () => {
+      const pixelCount = image.naturalWidth * image.naturalHeight;
+      if (!image.naturalWidth || !image.naturalHeight ||
+          image.naturalWidth > MAX_IMAGE_EDGE || image.naturalHeight > MAX_IMAGE_EDGE ||
+          pixelCount > MAX_IMAGE_PIXELS) {
+        fileError.textContent = '圖片尺寸過大；單邊不可超過 16,000 像素，總像素不可超過 6,000 萬。';
+        fileError.classList.add('active');
+        URL.revokeObjectURL(originalObjectUrl);
+        originalObjectUrl = null;
+        originalFile = null;
+        originalImg = null;
+        img = null;
+        cropImage.removeAttribute('src');
+        cropImage.style.display = 'none';
+        cropPlaceholder.style.display = 'block';
+        fileName.style.display = 'none';
+        setBgControlsEnabled(false);
+        fileInput.value = '';
+        return;
+      }
       originalImg = image;
       naturalW = image.naturalWidth;
       naturalH = image.naturalHeight;
@@ -786,6 +812,14 @@
       fileError.classList.add('active');
       URL.revokeObjectURL(originalObjectUrl);
       originalObjectUrl = null;
+      originalFile = null;
+      originalImg = null;
+      img = null;
+      cropImage.removeAttribute('src');
+      cropImage.style.display = 'none';
+      cropPlaceholder.style.display = 'block';
+      fileName.style.display = 'none';
+      setBgControlsEnabled(false);
       fileInput.value = '';
     };
     image.src = originalObjectUrl;
@@ -819,7 +853,8 @@
     bgToggle.disabled = true;
 
     try {
-      const resultBlob = await imglyRemoveBackground(originalFile, {
+      const removeBackground = await loadBackgroundRemoval();
+      const resultBlob = await removeBackground(originalFile, {
         progress: (key, current, total) => {
           bgStatusText.textContent = `AI 去背處理中（${current}/${total}）…`;
         }
@@ -1150,12 +1185,15 @@
 
   downloadBtn.addEventListener('click', () => {
     outputCanvas.toBlob((blob) => {
+      if (!blob) return;
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
+      const downloadUrl = URL.createObjectURL(blob);
+      a.href = downloadUrl;
       a.download = 'ID-photo-' + sizeMode + '-' + layoutType + '.png';
       document.body.appendChild(a);
       a.click();
       a.remove();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
     }, 'image/png', 1.0);
   });
 </script>
