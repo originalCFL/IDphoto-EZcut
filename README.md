@@ -2,7 +2,7 @@
 
 A single-file, client-side web app for cropping a portrait photo to
 standard Taiwan ID-photo sizes, optionally removing the background with
-an in-browser AI model, and tiling the result onto 4×6" photo paper or A4
+an in-browser AI model, and tiling the result onto 4×6-inch postcard (4X6明信片) or A4
 for printing.
 
 Everything runs **entirely in the visitor's browser**. No photo, cropped
@@ -16,7 +16,7 @@ has no backend.
   (4× 2" + 4× 1")
 - Optional AI background removal, running fully client-side, with a
   choice of white or blue-gradient background
-- Auto-tiled layout onto 4×6" photo paper or A4, live preview
+- Auto-tiled layout onto 4×6-inch postcard (4X6明信片) or A4, live preview
 - Download as a 300 DPI PNG (filename: `ID-photo-<size>-<paper>.png`)
 
 ## Privacy
